@@ -1,7 +1,9 @@
 from kvs import KeyValueStorage
 
 kvs = KeyValueStorage('kvs_31', "1234")
-kvs.create_pair('my_pic_1', "/Users/arsenii/Desktop/dsk/pyCourse/kvstask/kvs/140.jpg")
+# kvs.create_pair('My_pic_4', "/Users/arsenii/Desktop/dsk/pyCourse/kvstask/kvs/140.jpg")
+# kvs.create_pair('my_pic_1', "/Users/arsenii/Desktop/dsk/pyCourse/kvstask/kvs/140.jpg")
+# print(*kvs.get_item('my_pic_4', ignore_case=True), sep='\n')
 # kvs.delete_pair('my_pic_1')
 print(kvs.get_commit_log())
 # print(kvs.get_item('my_pic_1'))

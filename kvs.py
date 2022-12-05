@@ -31,13 +31,9 @@ class KeyValueStorage:
         fifty_megabytes = 52428800
         self.__database.execute_query_with_no_return(self.__query_builder.build_create_table_query(self.__storage_name,
                                                                                                    ['key', 'value']))
-        # TODO manage situation when trigger already exists
-        # try:
-        #     self.__database.execute_query_with_no_return(self.__query_builder.build_activate_trigger_query(
-        #         self.__storage_name
-        #     ))
-        # except Exception:
-        #     pass
+        self.__database.execute_query_with_no_return(
+            self.__query_builder.build_activate_trigger_query(self.__storage_name)
+        )
 
         if file_size > fifty_megabytes:
             self.__cold_bucket.upload_file(value)
@@ -49,18 +45,21 @@ class KeyValueStorage:
         query = self.__query_builder.build_insert_query(self.__storage_name, ['key', 'value'], key, value_link)
         self.__database.execute_query_with_no_return(query)
 
-    def get_item(self, key):
-        query = self.__query_builder.build_where_query(self.__storage_name, key)
+    def get_item(self, key: str, ignore_case=False) -> list[str] | str:
+        if ignore_case:
+            query = self.__query_builder.build_where_query_insensitive_case(self.__storage_name, key)
+        else:
+            query = self.__query_builder.build_where_query_sensitive_case(self.__storage_name, key)
         res = self.__database.execute_query_with_return(query)
         if res:
-            return res[0][0]
+            return [el[0] for el in res]
         else:
             return "No such key-value pair"
 
-    def delete_pair(self, key):
+    def delete_pair(self, key: str) -> None:
         try:
             value = self.__extract_value_name(self.__database.execute_query_with_return(
-                self.__query_builder.build_where_query(self.__storage_name, key)
+                self.__query_builder.build_where_query_sensitive_case(self.__storage_name, key)
             )[0][0])
         except IndexError:
             print("No such key-value pair")
@@ -73,17 +72,17 @@ class KeyValueStorage:
         except FileNotFoundError:
             self.__cold_bucket.delete_file(f"{self.__storage_name}/{value}")
 
-    def list_all_keys(self):
+    def list_all_keys(self) -> list[str]:
         query = self.__query_builder.build_list_all_keys_query(self.__storage_name)
         result = self.__database.execute_query_with_return(query)
         return [el[0] for el in result]
 
-    def search_by_prefix(self, prefix):
+    def search_by_prefix(self, prefix) -> list[str]:
         query = self.__query_builder.build_search_by_prefix_query(self.__storage_name, prefix)
         result = self.__database.execute_query_with_return(query)
         return [el[0] for el in result]
 
-    def get_commit_log(self):
+    def get_commit_log(self) -> PrettyTable:
         query = self.__query_builder.build_get_commit_log_query(self.__storage_name)
         log = self.__database.execute_query_with_return(query)
         table = PrettyTable()
@@ -93,7 +92,7 @@ class KeyValueStorage:
 
         return table
 
-    def get_item_by_value(self, value):
+    def get_item_by_value(self, value: str) -> list[str]:
         """
         :param value: value of the key-value pair, as it was named when uploaded from pc
         :param value:
@@ -105,5 +104,5 @@ class KeyValueStorage:
         self.__auth_handler.authenticate()
 
     @staticmethod
-    def __extract_value_name(value):
+    def __extract_value_name(value: str) -> str:
         return value.split('/')[-1].split('?')[0]

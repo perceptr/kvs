@@ -27,4 +27,8 @@ class BucketHandler:
                 path_to_file_on_cloud}, ExpiresIn=36000000)
 
     def delete_file(self, path_to_file_on_cloud: str):
-        self.__session.delete_object(Bucket=self.__bucket_name, Key=path_to_file_on_cloud)
+        resp = self.__session.head_object(Bucket=self.__bucket_name, Key=path_to_file_on_cloud)
+        if resp['ResponseMetadata']['HTTPStatusCode'] == 200:
+            self.__session.delete_object(Bucket=self.__bucket_name, Key=path_to_file_on_cloud)
+        else:
+            raise FileNotFoundError("File does not exist in bucket")

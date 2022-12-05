@@ -1,6 +1,6 @@
 class QueryBuilder:
     @staticmethod
-    def build_where_query(table: str, key: str) -> str:
+    def build_where_query_sensitive_case(table: str, key: str) -> str:
         return "SELECT value FROM %s WHERE key = '%s'" % (table, key)
 
     @staticmethod
@@ -33,7 +33,7 @@ class QueryBuilder:
 
     @staticmethod
     def build_activate_trigger_query(table: str) -> str:
-        return f"CREATE TRIGGER {table + 'trig'} BEFORE INSERT OR UPDATE OR DELETE ON %s " \
+        return f"CREATE OR REPLACE TRIGGER {table + 'trig'} BEFORE INSERT OR UPDATE OR DELETE ON %s " \
                f"FOR EACH ROW EXECUTE PROCEDURE change_trigger()" % table
     #
     # @staticmethod
@@ -44,4 +44,8 @@ class QueryBuilder:
     @staticmethod
     def build_get_commit_log_query(table: str) -> str:
         return "SELECT * FROM logging.main_log WHERE tabname = '%s'" % table
+
+    @staticmethod
+    def build_where_query_insensitive_case(table: str, key: str) -> str:
+        return "SELECT value FROM %s WHERE LOWER(key) = LOWER('%s')" % (table, key)
 
