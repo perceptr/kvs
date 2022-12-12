@@ -10,14 +10,14 @@ class QueryBuilder:
                     WHERE
                         NOT EXISTS (
                                     SELECT %s FROM %s WHERE %s = '%s'
-            )""" % (table, table_fields[0], table_fields[1], key, value, table_fields[0], table, table_fields[0], key)
+            )""" % (table, table_fields[0], table_fields[1], key, value,
+                    table_fields[0], table, table_fields[0], key)
 
     @staticmethod
     def build_create_table_query(table: str, table_fields: list[str]) -> str:
-        return """CREATE TABLE IF NOT EXISTS %s (
-            %s VARCHAR(255) PRIMARY KEY,
-            %s VARCHAR(255)
-        )""" % (table, table_fields[0], table_fields[1])
+        return "CREATE TABLE IF NOT EXISTS %s " \
+               "(%s VARCHAR(255) PRIMARY KEY, %s VARCHAR(255))" \
+            % (table, table_fields[0], table_fields[1])
 
     @staticmethod
     def build_delete_query(table: str, key: str) -> str:
@@ -35,7 +35,7 @@ class QueryBuilder:
     def build_activate_trigger_query(table: str) -> str:
         return f"CREATE OR REPLACE TRIGGER {table + 'trig'} BEFORE INSERT OR UPDATE OR DELETE ON %s " \
                f"FOR EACH ROW EXECUTE PROCEDURE change_trigger()" % table
-    #
+
     # @staticmethod
     # def build_activate_trigger_if_not_exists_query(table: str) -> str:
     #     return f"CREATE TRIGGER IF NOT EXISTS {table + 'trig'} BEFORE INSERT OR UPDATE OR DELETE ON %s " \

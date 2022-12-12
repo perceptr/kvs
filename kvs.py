@@ -9,40 +9,52 @@ from prettytable import PrettyTable
 
 
 class KeyValueStorage:
-    def __init__(self, storage_name: str, password: str, storage_limit=-1) -> None:
+    def __init__(self, storage_name: str,
+                 password: str, storage_limit=-1) -> None:
         self.__storage_name = storage_name
         self.__password = password
-        self.__database = DBHandler('postgres', 'k4v5s6', '87.239.106.32', '5432', 'postgres')
-        self.__auth_handler = AuthHandler(self.__database, self.__storage_name, self.__password)
+        self.__database = DBHandler(
+            'postgres', 'k4v5s6', '87.239.106.32', '5432', 'postgres')
+        self.__auth_handler = AuthHandler(
+            self.__database, self.__storage_name, self.__password)
         self.__query_builder = QueryBuilder()
         self.__check_auth()
         self.__credentials = CredentialsHandler()
-        self.__cold_bucket = BucketHandler(self.__credentials.get_cred_by_name("cold_bucket_id"),
-                                           self.__credentials.get_cred_by_name("cold_bucket_secret"),
-                                           str(BucketTypes.COLD.value),
-                                           self.__storage_name)
-        self.__hot_bucket = BucketHandler(self.__credentials.get_cred_by_name("hot_bucket_id"),
-                                          self.__credentials.get_cred_by_name("hot_bucket_secret"),
-                                          str(BucketTypes.HOT.value),
-                                          self.__storage_name)
+        self.__cold_bucket = BucketHandler(
+            self.__credentials.get_cred_by_name("cold_bucket_id"),
+            self.__credentials.get_cred_by_name("cold_bucket_secret"),
+            str(BucketTypes.COLD.value),
+            self.__storage_name
+        )
+        self.__hot_bucket = BucketHandler(
+            self.__credentials.get_cred_by_name("hot_bucket_id"),
+            self.__credentials.get_cred_by_name("hot_bucket_secret"),
+            str(BucketTypes.HOT.value),
+            self.__storage_name
+        )
 
     def create_pair(self, key: str, value: str):
         file_size = os.path.getsize(value)
         fifty_megabytes = 52428800
-        self.__database.execute_query_with_no_return(self.__query_builder.build_create_table_query(self.__storage_name,
-                                                                                                   ['key', 'value']))
         self.__database.execute_query_with_no_return(
-            self.__query_builder.build_activate_trigger_query(self.__storage_name)
+            self.__query_builder.build_create_table_query(
+                self.__storage_name,['key', 'value']))
+        self.__database.execute_query_with_no_return(
+            self.__query_builder.build_activate_trigger_query(
+                self.__storage_name)
         )
 
         if file_size > fifty_megabytes:
             self.__cold_bucket.upload_file(value)
-            value_link = self.__cold_bucket.get_public_link(f"{self.__storage_name}/{value.split('/')[-1]}")
+            value_link = self.__cold_bucket.get_public_link(
+                f"{self.__storage_name}/{value.split('/')[-1]}")
         else:
             self.__hot_bucket.upload_file(value)
-            value_link = self.__hot_bucket.get_public_link(f"{self.__storage_name}/{value.split('/')[-1]}")
+            value_link = self.__hot_bucket.get_public_link(
+                f"{self.__storage_name}/{value.split('/')[-1]}")
 
-        query = self.__query_builder.build_insert_query(self.__storage_name, ['key', 'value'], key, value_link)
+        query = self.__query_builder.build_insert_query(
+            self.__storage_name, ['key', 'value'], key, value_link)
         self.__database.execute_query_with_no_return(query)
 
     def get_item(self, key: str, ignore_case=False) -> list[str] | str:
@@ -58,9 +70,11 @@ class KeyValueStorage:
 
     def delete_pair(self, key: str) -> None:
         try:
-            value = self.__extract_value_name(self.__database.execute_query_with_return(
-                self.__query_builder.build_where_query_sensitive_case(self.__storage_name, key)
-            )[0][0])
+            value = self.__extract_value_name(
+                self.__database.execute_query_with_return(
+                    self.__query_builder.build_where_query_sensitive_case(
+                        self.__storage_name, key))[0][0]
+            )
         except IndexError:
             print("No such key-value pair")
             return
