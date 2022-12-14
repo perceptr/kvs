@@ -1,17 +1,14 @@
 import psycopg2
 import logging
-from replicator import DataBaseReplicator
-
-replicator = DataBaseReplicator()
 
 
-class DBHandler:
-    def __init__(self, user: str, password: str, host: str, port: str, database: str) -> None:
-        self.__user = user
-        self.__password = password
-        self.__host = host
-        self.__port = port
-        self.__database = database
+class DataBaseReplicator:
+    def __init__(self) -> None:
+        self.__user = "postgres"
+        self.__password = "replica1"
+        self.__host = "5.188.142.77"
+        self.__port = "5434"
+        self.__database = "postgres"
         self.cursor, self.conn = self.__connect_and_get_db_cursor()
 
     def __connect_and_get_db_cursor(self) -> psycopg2:
@@ -35,14 +32,14 @@ class DBHandler:
 
         return cursor, conn
 
-    def execute_query_with_return(self, query) -> list:
-        self.cursor.execute(query)
-        res = self.cursor.fetchall()
-        logging.info("Query executed successfully")
-        return res
-
-    @replicator.replicate
-    def execute_query_with_no_return(self, query) -> None:
+    def __execute_replication_query(self, query):
         self.cursor.execute(query)
         self.conn.commit()
-        logging.info("Query executed successfully")
+        logging.info(f"Query: {query} replicated successfully")
+
+    def replicate(self, func):
+        def wrapper(*args, **kwargs):
+            res = func(*args, **kwargs)
+            self.__execute_replication_query(args[1])
+            return res
+        return wrapper
