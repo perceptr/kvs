@@ -21,7 +21,6 @@ class BucketHandler:
                                    f"{self.specific_storage_name}/" + file_name)
 
     def get_public_link(self, path_to_file_on_cloud: str) -> str:
-
         return self.__session.generate_presigned_url('get_object', Params={
             'Bucket': self.__bucket_name, 'Key':
                 path_to_file_on_cloud}, ExpiresIn=36000000)
